@@ -100,6 +100,7 @@ class Manage:
             """)
             self.connector.commit()
             print("\nAccount Created Successfully!")
+            print("Confirmation message: Account created successfully!")
         except errors.IntegrityError:
             print(f"\nUserID: '{UserID}' already exists. Please retry with another UserID")
 
