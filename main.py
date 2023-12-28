@@ -25,6 +25,28 @@ def viewinfo(user : dict):
     AadharID: {user["AadharID"]}
     """)
 
+def assign_role(user : dict, role : str):
+    user["Role"] = role
+
+def modify_role(user : dict, role : str):
+    user["Role"] = role
+
+def check_permission(user : dict, permission : str):
+    if "Role" in user:
+        role = user["Role"]
+        if role == "admin":
+            return True
+        elif role == "regular user":
+            if permission == "viewinfo":
+                return True
+            else:
+                return False
+    return False
+
+def log_unauthorized_access(user : dict, permission : str):
+    with open("unauthorized_access.log", "a") as file:
+        file.write(f"Unauthorized access attempt by user {user['UserID']} for permission {permission} at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+
 def signin():
     print("\n")
     UserID = input("Enter your user ID: ")
@@ -45,44 +67,59 @@ def signin():
 
         Choose Option: """))
         if choice in ["1", "viewinfo"]:
-            time.sleep(1)
-            viewinfo(user)
-            time.sleep(2)
+            if check_permission(user, "viewinfo"):
+                time.sleep(1)
+                viewinfo(user)
+                time.sleep(2)
+            else:
+                log_unauthorized_access(user, "viewinfo")
+                print("You do not have permission to view info.")
+                time.sleep(2)
 
         elif choice in ["2", "updateinfo"]:
-            time.sleep(1)
-            viewinfo(user)
-            choice = input("Which field you like to edit?: ")
-            value = input("Enter new value: ")
+            if check_permission(user, "updateinfo"):
+                time.sleep(1)
+                viewinfo(user)
+                choice = input("Which field you like to edit?: ")
+                value = input("Enter new value: ")
 
-            if choice == "userid":
-                try:
+                if choice == "userid":
+                    try:
+                        Bank.updateUser(UserID, choice, value)
+                        user = Bank.getUser(value, Password)
+                        print(f"Account Updated Successfully!")
+                    except errors.IntegrityError:
+                        print(f"UserID: '{value}' already exists. Please retry with another UserID")
+
+                elif choice == "password":
                     Bank.updateUser(UserID, choice, value)
-                    user = Bank.getUser(value, Password)
+                    user = Bank.getUser(UserID, value)
                     print(f"Account Updated Successfully!")
-                except errors.IntegrityError:
-                    print(f"UserID: '{value}' already exists. Please retry with another UserID")
 
-            elif choice == "password":
-                Bank.updateUser(UserID, choice, value)
-                user = Bank.getUser(UserID, value)
-                print(f"Account Updated Successfully!")
-
+                else:
+                    try:
+                        Bank.updateUser(UserID, choice, value)
+                        user = Bank.getUser(UserID, Password)
+                        print(f"Account Updated Successfully!")
+                    except:
+                        print("Please enter values in correct format")
+                time.sleep(2)
             else:
-                try:
-                    Bank.updateUser(UserID, choice, value)
-                    user = Bank.getUser(UserID, Password)
-                    print(f"Account Updated Successfully!")
-                except:
-                    print("Please enter values in correct format")
-            time.sleep(2)
+                log_unauthorized_access(user, "updateinfo")
+                print("You do not have permission to update info.")
+                time.sleep(2)
 
         elif choice in ["3", "delete", "deleteaccount"]:
-            time.sleep(1)
-            Bank.deleteUser(user["UserID"])
-            print("Account Deleted Successfully!")
-            time.sleep(2)
-            break
+            if check_permission(user, "deleteaccount"):
+                time.sleep(1)
+                Bank.deleteUser(user["UserID"])
+                print("Account Deleted Successfully!")
+                time.sleep(2)
+                break
+            else:
+                log_unauthorized_access(user, "deleteaccount")
+                print("You do not have permission to delete account.")
+                time.sleep(2)
 
         elif choice in ["4", "logout", "exit"]:
             print("Logging out...")
@@ -112,21 +149,31 @@ def admin():
         
         Choose Option: """))
         if choice in ["1", "viewall", "viewalldata"]:
-            time.sleep(1)
-            for i in Bank.read_data():
-                print(i)
+            if check_permission(user, "viewalldata"):
+                time.sleep(1)
+                for i in Bank.read_data():
+                    print(i)
+                else:
+                    print('Data Not Found')
+                time.sleep(2)
             else:
-                print('Data Not Found')
-            time.sleep(2)
+                log_unauthorized_access(user, "viewalldata")
+                print("You do not have permission to view all data.")
+                time.sleep(2)
 
         elif choice in ["2", "deleteall","deletealldata"]:
-            time.sleep(1)
-            Bank.cursor.execute("""
-            DELETE FROM User
-            """)
-            Bank.connector.commit()
-            print("\n All Data Deleted Successfully!")
-            time.sleep(2)
+            if check_permission(user, "deletealldata"):
+                time.sleep(1)
+                Bank.cursor.execute("""
+                DELETE FROM User
+                """)
+                Bank.connector.commit()
+                print("\n All Data Deleted Successfully!")
+                time.sleep(2)
+            else:
+                log_unauthorized_access(user, "deletealldata")
+                print("You do not have permission to delete all data.")
+                time.sleep(2)
             
         elif choice in ["3", "logout", "exit"]:
             print("Logging out...")
