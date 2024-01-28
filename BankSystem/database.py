@@ -66,10 +66,10 @@ class Manage:
         self.cursor.close()
         return exit(0)
 
-    def getUser(self, UserID : str, Password : str):
+    def getUser(self, UserID : str, Password : str, Phone : str):
         self.dictcursor.execute(f"""
             SELECT * FROM User
-            WHERE UserID = "{UserID}" AND Password = "{Password}"
+            WHERE (UserID = "{UserID}" OR Phone = "{Phone}") AND Password = "{Password}"
         """)
         for data in self.dictcursor:
             if data:
@@ -83,8 +83,8 @@ class Manage:
             yield i
 
 
-    def sign_in(self, UserID : str, Password : str):
-        return self.getUser(UserID, Password)
+    def sign_in(self, UserID : str, Password : str, Phone : str):
+        return self.getUser(UserID, Password, Phone)
 
     def sign_up(self, UserID : str, Password : str, Amount : int, Name : str,
         Birth : str, Phone : str, Email : str, FatherName : str,
